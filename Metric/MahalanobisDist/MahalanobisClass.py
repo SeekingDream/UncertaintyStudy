@@ -50,7 +50,7 @@ class Mahalanobis():
             tmp = (fx - self.u_list[target]).mm(self.std_value)
             tmp = tmp.mm( (fx - self.u_list[target]).transpose(dim0=0, dim1=1) )
             tmp = tmp.diagonal().reshape([-1, 1])
-            score.append(tmp)
+            score.append(-tmp)
         score = torch.cat(score, dim = 1)
         return ten2numpy(torch.max(score, dim = 1)[0])
 

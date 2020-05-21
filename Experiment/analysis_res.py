@@ -1,6 +1,9 @@
 from BasicalClass import *
 
 
+name_list = \
+    ['dropout', 'scale', 'softmax', 'mahalanobis']
+
 def select_thresh(score, truth, req):
     truth = truth.reshape([-1])
     score_cand = np.sort(score)
@@ -10,7 +13,7 @@ def select_thresh(score, truth, req):
         coverage = (np.sum((pred == 1) * (truth == 1))) / (np.sum(truth))
         if acc > req:
             return val, coverage, acc
-    return None, None, None
+    return np.inf, None, None
 
 def simaliar_matrix(filter_index : list):
     metric_num = len(filter_index)
@@ -23,9 +26,18 @@ def simaliar_matrix(filter_index : list):
     return sim_mat
 
 
+def cal_acc_cov(thresh, test_score, test_truth):
+    pred = np.int32(test_score > thresh).reshape([-1])
+    acc = (np.sum((pred == 1) * (test_truth == 1))) / (np.sum(pred) + 0.00001)
+    coverage = (np.sum((pred == 1) * (test_truth == 1))) / (np.sum(test_truth))
+    return acc, coverage
+
+
 def run(train_score_list, test_score_list, train_truth, test_truth):
-    req_list = [0.95, 0.99]
+    req_list = [0.9, 0.95, 0.99]
     for req in req_list:
+        print('=============', req, '===================')
+        print('name,     acc,     coverage')
         filter_list = []
         for i, score in enumerate(train_score_list):
             thresh, _, _ = select_thresh(score, train_truth, req)
@@ -34,10 +46,13 @@ def run(train_score_list, test_score_list, train_truth, test_truth):
             else:
                 filter_index = list(np.where(test_score_list[i] > np.inf)[0])
             filter_list.append(filter_index)
+            acc, cov = cal_acc_cov(thresh, test_score_list[i], test_truth)
+            print(name_list[i], acc, cov)
         sim_mat = simaliar_matrix(filter_list)
-        print('=============',req,'===================')
+        print('simaliar    matrix')
         for sim_vec in sim_mat:
             print(sim_vec)
+        print('=======================================================')
 
 def main():
     truth = torch.load('./Result/Fashion/truth.res')
