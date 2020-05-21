@@ -65,6 +65,9 @@ def main():
         test_model(model, test_loader)
 
     save_dir = './model_weight/fashion/'
+
+    if not os.path.isdir('./model_weight/'):
+        os.mkdir('./model_weight/')
     if not os.path.isdir(save_dir):
         os.mkdir(save_dir)
     save_name = save_dir + model.name + '.h5'
