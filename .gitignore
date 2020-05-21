@@ -1,0 +1,6 @@
+data/
+model_weight/
+Result/
+__pycache__/
+.idea/
+*.pyc

@@ -1,0 +1,121 @@
+import torch
+from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+import os
+from sklearn.metrics import roc_curve, auc
+import numpy as np
+
+
+
+DEVICE = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+if DEVICE.type == 'cpu':
+    os.chdir('F:/Python/Uncertainty')  # This set the current work directory.
+    IS_DEBUG = True
+else:
+    IS_DEBUG = False
+DEBUG_NUM = 10
+RAND_SEED = 333
+
+
+
+
+# dataset = (x, y)
+def common_predict_y(dataset, model, device, batch_size = 32, ): # Todo : modeify the batch_size to a large number
+    model.to(device)
+    data_loader = DataLoader(
+        dataset, batch_size=batch_size,
+        shuffle=False, collate_fn=None,
+    )
+    pred_pos, pred_y, y_list = [], [], []
+    for i, (x, y_label) in enumerate(data_loader):
+        output = model(x.to(device))
+        pos, y = torch.max(output, dim=1)
+        pred_pos.append(output.detach())
+        pred_y.append(y.detach())
+        y_list.append(y_label)
+        if IS_DEBUG and i >= DEBUG_NUM:
+            break
+    return  torch.cat(pred_pos, dim = 0).to(device), \
+            torch.cat(pred_y, dim=0).view([-1]).to(device),\
+            torch.cat(y_list, dim = 0).view([-1]).to(device)
+# dataset = (x)
+def common_predict(data_loader, model, device):
+    pred_pos, pred_list, y_list = [], [], []
+    model.to(device)
+    for i, (x, y) in enumerate(data_loader):
+        torch.cuda.empty_cache()
+        x = x.to(device)
+        output = model(x)
+        pos, pred_y = torch.max(output, dim=1)
+        pred_list.append(pred_y.detach())
+        pred_pos.append(output.detach())
+        y_list.append(y.detach())
+        if IS_DEBUG and i >= DEBUG_NUM:
+            break
+    return torch.cat(pred_pos, dim = 0).cpu(), torch.cat(pred_list, dim = 0).cpu(), torch.cat(y_list, dim = 0).cpu()
+
+
+def common_get_auc(y_test, y_score, name):
+    fpr, tpr, threshold = roc_curve(y_test, y_score)  ###计算真正率和假正率
+    roc_auc = auc(fpr, tpr)  ###计算auc的值
+    if name is not None:
+        print(name, 'auc is ',roc_auc)
+    return roc_auc
+
+def common_plotROC(y_test, y_score, file_name= None):
+    fpr, tpr, threshold = roc_curve(y_test, y_score)  ###计算真正率和假正率
+    roc_auc = auc(fpr, tpr)  ###计算auc的值
+    lw = 2
+    plt.plot(fpr, tpr, color='darkorange',
+             lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)  ###假正率为横坐标，真正率为纵坐标做曲线
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic example')
+    plt.legend(loc="lower right")
+    if file_name is not None:
+        plt.savefig(file_name)
+    else:
+        plt.show()
+    print(file_name, 'auc is ', roc_auc)
+    return roc_auc
+
+def common_get_accuracy(ground_truth, oracle_pred, threshhold = 0.1):
+    oracle_pred = (oracle_pred > threshhold)
+    pos_acc = (np.sum((oracle_pred == 1) * (ground_truth == 1))) / (np.sum(oracle_pred == 1) + 1)
+    neg_acc = (np.sum((oracle_pred == 0) * (ground_truth == 1))) / (np.sum(oracle_pred == 0) + 1)
+    coverage = (np.sum((oracle_pred == 1) * (ground_truth == 1))) / (np.sum(ground_truth == 1) + 1)
+    print(threshhold, pos_acc, neg_acc, coverage)
+
+def common_get_xy(dataset, batch_size , device):
+    x,y = [],[]
+    data_loader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=False)
+    for i, data in enumerate(data_loader):
+        x.append(data[0])
+        y.append(data[1])
+        if IS_DEBUG and i >= DEBUG_NUM:
+            break
+    return torch.cat(x, dim = 0).cpu(), torch.cat(y,dim = 0).cpu()
+
+def common_cal_accuracy(pred_y, y):
+    tmp = (pred_y.view([-1]) == y.view([-1]))
+    acc = torch.sum(tmp.float()) / len(y)
+    return acc
+
+
+def common_load_corroptions():
+    dir_name = './data/cifar_10/CIFAR-10-C/'
+    y = np.load(dir_name + 'labels.npy')
+    y = torch.tensor(y, dtype=torch.long)
+    for file_name in os.listdir(dir_name):
+        if file_name != 'labels.npy':
+            x = np.load(dir_name + file_name)
+            yield x, y, file_name.split('.')[0]
+
+
+def common_check_gpu(id):
+    if not IS_DEBUG:
+        gpu_memory_log(device=id)
