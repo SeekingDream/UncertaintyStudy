@@ -20,6 +20,7 @@ class ModelActivateDropout():
             res += pos
         res = ten2numpy(res / self.iter_time)
         res = -np.sum(res * np.log(res + 1e-18), axis=1)
+        self.model.eval()
         return res
 
     def run_experiment(self, val_loader, test_loader):

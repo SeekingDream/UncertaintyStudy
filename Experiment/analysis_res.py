@@ -44,9 +44,12 @@ def main():
     dropout_score = torch.load('./Result/Fashion/dropout.res')
     scale_score = torch.load('./Result/Fashion/scale.res')
     viallina_score = torch.load('./Result/Fashion/viallina.res')
+    mahalanobis_score = torch.load('./Result/Fashion/mahalanobis.res')
 
-    train_score_list = [dropout_score[0], scale_score[0], viallina_score[0]]
-    test_score_list = [dropout_score[1], scale_score[1], viallina_score[1]]
+    train_score_list = \
+        [dropout_score[0], scale_score[0], viallina_score[0], mahalanobis_score[0]]
+    test_score_list = \
+        [dropout_score[1], scale_score[1], viallina_score[1], mahalanobis_score[1]]
     train_truth = truth[1]
     test_truth = truth[2]
     run(train_score_list, test_score_list, train_truth, test_truth)

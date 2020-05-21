@@ -108,5 +108,4 @@ class Fashion_CNN(nn.Module):
         x = x.view(-1, 4 * 4 * 50)
         x = self.dropout(x)
         x = self.fc1(x)
-        x = self.relu(x)
         return x
