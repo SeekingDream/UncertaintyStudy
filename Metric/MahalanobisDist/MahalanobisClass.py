@@ -12,7 +12,7 @@ class Mahalanobis():
         self.device = device
         self.name = instance.name
         self.class_num = instance.class_num
-        self.u_list, self.std_value = self.preprocess(instance.val_loader)
+        self.u_list, self.std_value = self.preprocess(instance.train_loader)
 
     def preprocess(self, data_loader):
         fx, y = self.get_penultimate(data_loader)
@@ -23,7 +23,7 @@ class Mahalanobis():
             std_val = (fx_tar - mean_val).transpose(dim0=0, dim1= 1).mm((fx_tar - mean_val))
             u_list.append(mean_val)
             std_list.append(std_val)
-        std_value = sum(std_list) / len(data_loader)
+        std_value = sum(std_list) / len(y)
         std_value = torch.inverse(std_value)
         return u_list, std_value
 
