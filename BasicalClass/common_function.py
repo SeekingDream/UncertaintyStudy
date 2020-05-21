@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
+from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import os
 from sklearn.metrics import roc_curve, auc
@@ -9,7 +10,7 @@ import numpy as np
 
 DEVICE = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
 if DEVICE.type == 'cpu':
-    os.chdir('F:/Python/Uncertainty')  # This set the current work directory.
+    os.chdir('F:/Python/UncertaintyStudy')  # This set the current work directory.
     IS_DEBUG = True
 else:
     IS_DEBUG = False
@@ -115,7 +116,9 @@ def common_load_corroptions():
             x = np.load(dir_name + file_name)
             yield x, y, file_name.split('.')[0]
 
+def common_get_maxpos(pos : torch.Tensor):
+    test_pred_pos, _ = torch.max(F.softmax(pos, dim = 1), dim=1)
+    return ten2numpy(test_pred_pos)
 
-def common_check_gpu(id):
-    if not IS_DEBUG:
-        gpu_memory_log(device=id)
+def ten2numpy(a : torch.Tensor):
+    return a.detach().cpu().numpy()

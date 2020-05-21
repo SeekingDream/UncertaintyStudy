@@ -1,7 +1,8 @@
 import torch
 from torch import nn, optim
 from torch.nn import functional as F
-
+from BasicalClass import common_predict, common_get_maxpos
+from BasicalClass import BasicModule
 
 class ModelWithTemperature(nn.Module):
     """
@@ -11,10 +12,13 @@ class ModelWithTemperature(nn.Module):
         NB: Output of the neural network should be the classification logits,
             NOT the softmax (or log softmax)!
     """
-    def __init__(self, model):
+    def __init__(self, module : BasicModule, device):
         super(ModelWithTemperature, self).__init__()
-        self.model = model
+        self.model = module.model
+        self.name = module.name
+        self.device = device
         self.temperature = nn.Parameter(torch.ones(1) * 1.5)
+
 
     def forward(self, input):
         logits = self.model(input)
@@ -35,7 +39,7 @@ class ModelWithTemperature(nn.Module):
         We're going to set it to optimize NLL.
         valid_loader (DataLoader): validation set loader
         """
-        self.cuda()
+        self.to(self.device)
         nll_criterion = nn.CrossEntropyLoss().cuda()
         ece_criterion = _ECELoss().cuda()
 
@@ -44,12 +48,12 @@ class ModelWithTemperature(nn.Module):
         labels_list = []
         with torch.no_grad():
             for input, label in valid_loader:
-                input = input.cuda()
+                input = input.to(self.device)
                 logits = self.model(input)
                 logits_list.append(logits)
                 labels_list.append(label)
-            logits = torch.cat(logits_list).cuda()
-            labels = torch.cat(labels_list).cuda()
+            logits = torch.cat(logits_list).to(self.device)
+            labels = torch.cat(labels_list).to(self.device)
 
         # Calculate NLL and ECE before temperature scaling
         before_temperature_nll = nll_criterion(logits, labels).item()
@@ -70,8 +74,18 @@ class ModelWithTemperature(nn.Module):
         after_temperature_ece = ece_criterion(self.temperature_scale(logits), labels).item()
         print('Optimal temperature: %.3f' % self.temperature.item())
         print('After temperature - NLL: %.3f, ECE: %.3f' % (after_temperature_nll, after_temperature_ece))
-
         return self
+
+    def run_experiment(self, val_loader, test_loader):
+        val_res, _, _ = common_predict(val_loader, self, self.device)
+        test_res, _, _ = common_predict(test_loader, self, self.device)
+
+        res = [
+            common_get_maxpos(val_res),
+            common_get_maxpos(test_res),
+        ]
+        torch.save(res, './Result/' + self.name + '/scale.res')
+        print('get result for Scaleing')
 
 
 class _ECELoss(nn.Module):

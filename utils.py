@@ -1,15 +1,7 @@
 from  BasicalClass import *
 
 
-MODULE_LIST = [
-    Fashion_Module,
-    CIFAR10_Module,
-    CIFAR100_Module,
-    Android_Module,
-]
 
-if not os.path.isdir('./Result/'):
-    os.mkdir('./Result/')
 
 
 

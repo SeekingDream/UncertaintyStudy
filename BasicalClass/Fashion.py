@@ -16,8 +16,6 @@ class Fashion_Module(BasicModule):
         max_val = 1 #(1 - np.array(self.mean)) / np.array(self.std)
         self.clip = (min_val, max_val)
 
-        self.model = self.get_model()
-
         self.transform_train = transforms.Compose(
             [
                 transforms.ToTensor(),
@@ -29,7 +27,7 @@ class Fashion_Module(BasicModule):
         self.train_batch_size = 256
         self.test_batch_size = 256 if IS_DEBUG else 5000
         self.name = 'Fashion'
-        self.train_loader, self.validation_loader, self.test_loader = self.load_data()
+        self.train_loader, self.val_loader, self.test_loader = self.load_data()
 
         self.get_information()
 
@@ -42,7 +40,7 @@ class Fashion_Module(BasicModule):
         self.eps = 1.0
         if not os.path.isdir('./Result/' + self.name):
             os.mkdir('./Result/' + self.name)
-
+        self.save_truth()
         print('construct the module', self.name, 'the accuracy is %0.3f, %0.3f' % (self.train_acc, self.acc))
 
 
@@ -85,7 +83,6 @@ class Fashion_Module(BasicModule):
                 break
         sub_res_list = [torch.cat(i, dim=0) for i in sub_res_list]
         return sub_res_list, sub_num
-
 
 
 

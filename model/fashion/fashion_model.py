@@ -95,3 +95,18 @@ class Fashion_CNN(nn.Module):
         x = F.relu(self.fc1(x))
         res.append(x.detach().cpu().numpy())
         return np.concatenate(res, axis=1)
+
+    def get_penultimate(self, x):
+        x = self.conv1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = F.max_pool2d(x, 2, 2)
+        x = self.conv2(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = F.max_pool2d(x, 2, 2)
+        x = x.view(-1, 4 * 4 * 50)
+        x = self.dropout(x)
+        x = self.fc1(x)
+        x = self.relu(x)
+        return x
