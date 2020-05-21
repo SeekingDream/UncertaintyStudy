@@ -58,9 +58,9 @@ def main():
     test_loader = torch.utils.data.DataLoader(test_db,batch_size=2000, shuffle=True)
 
     model = Fashion_CNN().to(DEVICE)
-    optimizer = optim.SGD(model.parameters(), lr=0.01)   #optimizer存储了所有parameters的引用，每个parameter都包含gradient
+    optimizer = optim.Adam(model.parameters(), lr=0.01)   #optimizer存储了所有parameters的引用，每个parameter都包含gradient
 
-    for epoch in range(1, 50):
+    for epoch in range(1, 20):
         train_model(model, train_loader, optimizer, epoch)
         test_model(model, test_loader)
 
