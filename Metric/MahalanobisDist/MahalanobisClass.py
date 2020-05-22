@@ -19,7 +19,7 @@ class Mahalanobis():
         u_list, std_list = [],[]
         for target in range(self.class_num):
             fx_tar = fx[torch.where(y == target)]
-            mean_val = torch.mean(fx_tar)
+            mean_val = torch.mean(fx_tar, dim = 0)
             std_val = (fx_tar - mean_val).transpose(dim0=0, dim1= 1).mm((fx_tar - mean_val))
             u_list.append(mean_val)
             std_list.append(std_val)
