@@ -21,8 +21,8 @@ def simaliar_matrix(filter_index : list):
     for i in range(metric_num):
         for j in range(metric_num):
             union_set = len(set(filter_index[i]) & set(filter_index[j])).__float__()
-            sim_mat[i, j] = \
-                union_set / (min(len(set(filter_index[i])), len(set(filter_index[j]))) + 0.00001)
+            sum_set =  len(set(filter_index[i]) | set(filter_index[j])).__float__() + 1e-8
+            sim_mat[i, j] =  union_set / sum_set
     return sim_mat
 
 
