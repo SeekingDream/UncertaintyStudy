@@ -2,6 +2,7 @@ import torch
 from BasicalClass import BasicModule
 from torch.nn import functional as F
 from BasicalClass import common_predict, ten2numpy
+from BasicalClass import common_get_auc
 import numpy as np
 from utils import  IS_DEBUG, DEBUG_NUM
 
@@ -52,6 +53,10 @@ class Mahalanobis():
             tmp = tmp.diagonal().reshape([-1, 1])
             score.append(-tmp)
         score = torch.cat(score, dim = 1)
+
+        score = ten2numpy(torch.max(score, dim = 1)[0])
+        y = ten2numpy(_)
+        common_get_auc( y, score , None)
         return ten2numpy(torch.max(score, dim = 1)[0])
 
     def run_experiment(self, val_loader, test_loader):

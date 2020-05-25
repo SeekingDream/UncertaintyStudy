@@ -10,22 +10,23 @@ class ModelActivateDropout():
         self.device = device
         self.iter_time = iter_time
         self.name = instance.name
+        self.val_pred = instance.val_pred_y
+        self.test_pred = instance.test_pred_y
 
-    def extract_metric(self, data_loader):
+
+    def extract_metric(self, data_loader, orig_pred_y):
         res = 0
         self.model.train()
         for _ in range(self.iter_time):
-            pos, _, _ = common_predict(data_loader, self.model, self.device)
-            pos = F.softmax(pos, dim=1)
-            res += pos
-        res = ten2numpy(res / self.iter_time)
-        res = -np.sum(res * np.log(res + 1e-18), axis=1)
+            _, pred, _ = common_predict(data_loader, self.model, self.device)
+            res= res + pred.eq(orig_pred_y)
         self.model.eval()
+        res = ten2numpy(res.float() / self.iter_time)
         return res
 
     def run_experiment(self, val_loader, test_loader):
-        val_res = self.extract_metric(val_loader)
-        test_res = self.extract_metric(test_loader)
+        val_res = self.extract_metric(val_loader, self.val_pred)
+        test_res = self.extract_metric(test_loader, self.test_pred)
 
         res = [
             val_res,
