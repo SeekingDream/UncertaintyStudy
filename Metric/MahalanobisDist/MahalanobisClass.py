@@ -47,6 +47,7 @@ class Mahalanobis():
         for i, (x, y) in enumerate(data_loader):
             x = x.to(self.device)
             self.model.to(self.device)
+            print(i)
             fx = self.model.get_feature(x)
             res.append(fx)
             y_list.append(y)
