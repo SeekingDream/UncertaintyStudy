@@ -47,7 +47,7 @@ def run(train_score_list, test_score_list, train_truth, test_truth):
                 filter_index = list(np.where(test_score_list[i] > np.inf)[0])
             filter_list.append(filter_index)
             acc, cov = cal_acc_cov(thresh, test_score_list[i], test_truth)
-            print(name_list[i], acc, cov)
+            print(name_list[i], thresh, acc, cov)
         sim_mat = simaliar_matrix(filter_list)
         print('simaliar    matrix')
         for sim_vec in sim_mat:
@@ -67,7 +67,12 @@ def main():
         [dropout_score[1], scale_score[1], viallina_score[1], mahalanobis_score[1]]
     train_truth = truth[1]
     test_truth = truth[2]
+
+    debug_score = [i.reshape([-1, 1]) for i in test_score_list]
+    debug_score = np.concatenate(debug_score, axis= 1)
+
     run(train_score_list, test_score_list, train_truth, test_truth)
+
 
 
 

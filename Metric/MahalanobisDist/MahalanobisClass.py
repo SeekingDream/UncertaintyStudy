@@ -5,6 +5,8 @@ from BasicalClass import common_predict, ten2numpy
 from BasicalClass import common_get_auc
 import numpy as np
 from utils import  IS_DEBUG, DEBUG_NUM
+from sklearn.linear_model import LogisticRegression
+
 
 class Mahalanobis():
     def __init__(self, instance : BasicModule, device):
@@ -13,7 +15,18 @@ class Mahalanobis():
         self.device = device
         self.name = instance.name
         self.class_num = instance.class_num
+        self.hidden_num = 1
         self.u_list, self.std_value = self.preprocess(instance.train_loader)
+        self.lr = self.train_logic(instance.train_loader, instance.train_truth)
+
+
+    def train_logic(self, data_loader, ground_truth):
+        train_res = self.extract_metric(data_loader)
+        train_res = train_res.reshape([-1, self.hidden_num])
+        lr = LogisticRegression(C=1.0, penalty='l2', tol=0.01)
+        lr.fit(train_res, ground_truth)
+        print(lr.score(train_res, ground_truth))
+        return lr
 
     def preprocess(self, data_loader):
         fx, y = self.get_penultimate(data_loader)
@@ -53,15 +66,14 @@ class Mahalanobis():
             tmp = tmp.diagonal().reshape([-1, 1])
             score.append(-tmp)
         score = torch.cat(score, dim = 1)
-
         score = ten2numpy(torch.max(score, dim = 1)[0])
-        y = ten2numpy(_)
-        common_get_auc( y, score , None)
-        return ten2numpy(torch.max(score, dim = 1)[0])
+        return score
 
     def run_experiment(self, val_loader, test_loader):
-        val_res = self.extract_metric(val_loader)
-        test_res = self.extract_metric(test_loader)
+        val_res = self.extract_metric(val_loader).reshape([-1, self.hidden_num])
+        val_res = self.lr.predict_proba(val_res)[:, 1]
+        test_res = self.extract_metric(test_loader).reshape([-1, self.hidden_num])
+        test_res = self.lr.predict_proba(test_res)[:, 1]
         res = [
             val_res,
             test_res,

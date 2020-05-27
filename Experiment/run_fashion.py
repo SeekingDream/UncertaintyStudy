@@ -14,8 +14,8 @@ module = Fashion_Module(device, load_poor = False)
 # t.run_experiment(module.val_loader, module.test_loader)
 #
 #
-mc = ModelActivateDropout(module, device, iter_time= 300)
-mc.run_experiment(module.val_loader, module.test_loader)
+# mc = ModelActivateDropout(module, device, iter_time= 500)
+# mc.run_experiment(module.val_loader, module.test_loader)
 
 
 ma = Mahalanobis(module, device)

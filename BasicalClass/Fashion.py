@@ -43,7 +43,6 @@ class Fashion_Module(BasicModule):
         self.save_truth()
         print('construct the module', self.name, 'the accuracy is %0.3f, %0.3f' % (self.train_acc, self.acc))
 
-
     def load_model(self):
         model = Fashion_CNN()
         model.load_state_dict(
