@@ -96,7 +96,7 @@ class Fashion_CNN(nn.Module):
         res.append(x.detach().cpu().numpy())
         return np.concatenate(res, axis=1)
 
-    def get_penultimate(self, x):
+    def get_feature(self, x):
         x = self.conv1(x)
         x = self.relu(x)
         x = self.dropout(x)

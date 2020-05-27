@@ -47,7 +47,7 @@ class Mahalanobis():
         for i, (x, y) in enumerate(data_loader):
             x = x.to(self.device)
             self.model.to(self.device)
-            fx = self.model.get_penultimate(x)
+            fx = self.model.get_feature(x)
             res.append(fx)
             y_list.append(y)
             if IS_DEBUG and i >= DEBUG_NUM:
