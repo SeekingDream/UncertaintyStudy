@@ -23,7 +23,7 @@ class Fashion_MLP(nn.Module):
         x = self.fc3(x)
         return x
 
-    def  get_hidden(self, x):
+    def get_hidden(self, x):
         res = []
         num = len(x)
         x = x.view(-1, 28 * 28)
@@ -43,24 +43,32 @@ class Fashion_CNN(nn.Module):
         self.fc1 = nn.Linear(4 * 4 * 50, 200)
         self.fc2 = nn.Linear(200, 10)
         self.dropout = nn.Dropout()
-        self.relu = nn.ReLU(inplace=True)
+        self.relu_1 = nn.ReLU(inplace=True)
+        self.relu_2 = nn.ReLU(inplace=True)
+        self.relu_3 = nn.ReLU(inplace=True)
         self.name = 'Fashion_CNN'
         self.sub_num = [2, 4, 5]
 
+    def try_relu(self, func, x):
+        try:
+            x = func(x)
+        except:
+            x = x
+        return x
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.relu(x)
+        self.try_relu(self.relu_1, x)
         x = self.dropout(x)
         x = F.max_pool2d(x, 2, 2)
         x = self.conv2(x)
-        x = self.relu(x)
+        self.try_relu(self.relu_2, x)
         x = self.dropout(x)
         x = F.max_pool2d(x, 2, 2)
         x = x.view(-1, 4 * 4 * 50)
         x = self.dropout(x)
         x = self.fc1(x)
-        x = self.relu(x)
+        self.try_relu(self.relu_3, x)
         x = self.fc2(x)
         return x
 

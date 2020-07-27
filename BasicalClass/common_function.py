@@ -7,7 +7,6 @@ from sklearn.metrics import roc_curve, auc
 import numpy as np
 
 
-
 DEVICE = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
 if DEVICE.type == 'cpu':
     os.chdir('F:/Python/UncertaintyStudy')  # This set the current work directory.
@@ -18,9 +17,6 @@ DEBUG_NUM = 10
 RAND_SEED = 333
 
 
-
-
-# dataset = (x, y)
 def common_predict_y(dataset, model, device, batch_size = 32, ): # Todo : modeify the batch_size to a large number
     model.to(device)
     data_loader = DataLoader(
@@ -39,10 +35,12 @@ def common_predict_y(dataset, model, device, batch_size = 32, ): # Todo : modeif
     return  torch.cat(pred_pos, dim = 0).to(device), \
             torch.cat(pred_y, dim=0).view([-1]).to(device),\
             torch.cat(y_list, dim = 0).view([-1]).to(device)
-# dataset = (x)
+
+
 def common_predict(data_loader, model, device):
     pred_pos, pred_list, y_list = [], [], []
     model.to(device)
+    model.eval()
     for i, (x, y) in enumerate(data_loader):
         torch.cuda.empty_cache()
         x = x.to(device)
@@ -53,7 +51,7 @@ def common_predict(data_loader, model, device):
         y_list.append(y.detach())
         if IS_DEBUG and i >= DEBUG_NUM:
             break
-    return torch.cat(pred_pos, dim = 0).cpu(), torch.cat(pred_list, dim = 0).cpu(), torch.cat(y_list, dim = 0).cpu()
+    return torch.cat(pred_pos, dim=0).cpu(), torch.cat(pred_list, dim = 0).cpu(), torch.cat(y_list, dim = 0).cpu()
 
 
 def common_get_auc(y_test, y_score, name):
@@ -62,6 +60,7 @@ def common_get_auc(y_test, y_score, name):
     if name is not None:
         print(name, 'auc is ',roc_auc)
     return roc_auc
+
 
 def common_plotROC(y_test, y_score, file_name= None):
     fpr, tpr, threshold = roc_curve(y_test, y_score)  ###计算真正率和假正率
@@ -83,6 +82,7 @@ def common_plotROC(y_test, y_score, file_name= None):
     print(file_name, 'auc is ', roc_auc)
     return roc_auc
 
+
 def common_get_accuracy(ground_truth, oracle_pred, threshhold = 0.1):
     oracle_pred = (oracle_pred > threshhold)
     pos_acc = (np.sum((oracle_pred == 1) * (ground_truth == 1))) / (np.sum(oracle_pred == 1) + 1)
@@ -90,7 +90,8 @@ def common_get_accuracy(ground_truth, oracle_pred, threshhold = 0.1):
     coverage = (np.sum((oracle_pred == 1) * (ground_truth == 1))) / (np.sum(ground_truth == 1) + 1)
     print(threshhold, pos_acc, neg_acc, coverage)
 
-def common_get_xy(dataset, batch_size , device):
+
+def common_get_xy(dataset, batch_size, device):
     x,y = [],[]
     data_loader = DataLoader(
         dataset, batch_size=batch_size, shuffle=False)
@@ -100,6 +101,7 @@ def common_get_xy(dataset, batch_size , device):
         if IS_DEBUG and i >= DEBUG_NUM:
             break
     return torch.cat(x, dim = 0).cpu(), torch.cat(y,dim = 0).cpu()
+
 
 def common_cal_accuracy(pred_y, y):
     tmp = (pred_y.view([-1]) == y.view([-1]))
@@ -116,9 +118,11 @@ def common_load_corroptions():
             x = np.load(dir_name + file_name)
             yield x, y, file_name.split('.')[0]
 
-def common_get_maxpos(pos : torch.Tensor):
-    test_pred_pos, _ = torch.max(F.softmax(pos, dim = 1), dim=1)
-    return ten2numpy(test_pred_pos)
 
-def ten2numpy(a : torch.Tensor):
+def common_get_maxpos(pos : torch.Tensor):
+    test_pred_pos, _ = torch.max(F.softmax(pos, dim=1), dim=1)
+    return common_ten2numpy(test_pred_pos)
+
+
+def common_ten2numpy(a:torch.Tensor):
     return a.detach().cpu().numpy()

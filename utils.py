@@ -1,20 +1,8 @@
-from  BasicalClass import *
+from BasicalClass import *
+
+
+if not os.path.isdir('../Result/'):
+    os.mkdir('../Result/')
 
 
 
-
-
-
-
-
-
-
-
-
-def main():
-    m = CIFAR10_Module()
-    print()
-
-
-if __name__ == '__main__':
-    main()

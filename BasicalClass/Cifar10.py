@@ -6,9 +6,10 @@ import torch.nn as nn
 from BasicalClass.common_function import *
 from BasicalClass.Basic import BasicModule
 
+
 class CIFAR10_Module(BasicModule):
-    def __init__(self, device, load_poor = False):
-        super(CIFAR10_Module,self).__init__(device, load_poor)
+    def __init__(self, device, load_poor=False):
+        super(CIFAR10_Module, self).__init__(device, load_poor)
         self.mean = [0.4914, 0.4822, 0.4465]
         self.std = [0.2023, 0.1994, 0.2010]
         min_val = (0 - np.array(self.mean)) / np.array(self.std)
@@ -33,14 +34,12 @@ class CIFAR10_Module(BasicModule):
         self.train_pred_pos, self.train_pred_y = \
             common_predict(self.train_x, self.model, self.train_batch_size, self.device)
 
-
         test_dataset = self.load_data(False)
         self.test_x, self.test_y = common_get_xy(test_dataset, self.test_batch_size, self.device)
         self.test_pred_pos, self.test_pred_y = \
             common_predict(self.test_x, self.model, self.train_batch_size, self.device)
 
         self.ground_truth = (self.test_pred_y == self.test_y).reshape([-1]).int()
-
 
         self.train_acc = common_cal_accuracy(self.train_pred_y, self.train_y)
         self.acc = common_cal_accuracy(self.test_pred_y, self.test_y)
@@ -58,16 +57,15 @@ class CIFAR10_Module(BasicModule):
 
     def load_model(self):
         model = resnet18()
-        state_dict = torch.load('./model_weight/cifar_10/resnet18.pt', map_location=self.device)
+        state_dict = torch.load('../model_weight/cifar_10/resnet18.pt', map_location=self.device)
         model.load_state_dict(state_dict)
         return model
 
     def load_poor_model(self):
         model = AlexNet()
-        state_dict = torch.load('./model_weight/cifar_10/AlexNet.h5', map_location=self.device)
+        state_dict = torch.load('../model_weight/cifar_10/AlexNet.h5', map_location=self.device)
         model.load_state_dict(state_dict)
         return model
-
 
     def load_data(self, is_train=True):
         return torchvision.datasets.CIFAR10(

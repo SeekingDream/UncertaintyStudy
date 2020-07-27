@@ -1,49 +1,19 @@
 from typing import *
-from BasicalClass import  BasicModule
-from BasicalClass import common_get_maxpos
+from BasicalClass import BasicModule
+from BasicalClass import common_get_maxpos, common_predict
+from Metric import BasicUncertainty
 import torch.nn as nn
 import torch.optim as optim
 import argparse
 import torch
 
-class Viallina:
-    def __init__(self, instance : BasicModule,
-                 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")):
-        self.instance = instance
-        self.device = device
-        self.train_batch_size = self.instance.train_batch_size
-        self.test_batch_size = self.instance.test_batch_size
-        self.model = self.instance.model
-        self.name = self.instance.name
-        self.class_num = self.instance.class_num
-        self.train_y, self.val_y, self.test_y  = \
-            self.instance.train_y, self.instance.val_y, self.instance.test_y
 
-        self.train_pred_pos, self.train_pred_y =\
-            self.instance.train_pred_pos, self.instance.train_pred_y
-        self.val_pred_pos, self.val_pred_y = \
-            self.instance.val_pred_pos, self.instance.val_pred_y
-        self.test_pred_pos, self.test_pred_y = \
-            self.instance.test_pred_pos, self.instance.test_pred_y
+class Viallina(BasicUncertainty):
+    def __init__(self, instance: BasicModule, device):
+        super(Viallina, self).__init__(instance, device)
 
-        self.softmax = nn.Softmax(dim = 1)
-
-
-
-        res = [
-            #self.get_maxpos(self.train_pred_pos),
-            common_get_maxpos(self.val_pred_pos),
-            common_get_maxpos(self.test_pred_pos),
-        ]
-        torch.save(res, './Result/' + self.name + '/viallina.res')
-        print('get result for viallina')
-
-
-
-    def run(self, feature_name):
-
-        test_pred_pos, _ = torch.max(self.softmax(self.test_pred_pos), dim = 1)
-        #common_get_auc(ground_truth.data.numpy(), test_pred_pos.data.numpy(), self.__class__.__name__)
-
+    def _uncertainty_calculate(self, data_loader):
+        pred_pos, _, _ = common_predict(data_loader, self.model, self.device)
+        return common_get_maxpos(pred_pos)
 
 

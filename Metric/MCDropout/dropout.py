@@ -1,36 +1,51 @@
 import torch
 from BasicalClass import BasicModule
 from torch.nn import functional as F
-from BasicalClass import common_predict, ten2numpy
+from BasicalClass import common_predict, common_ten2numpy
 import numpy as np
+from Metric import BasicUncertainty
 
-class ModelActivateDropout():
-    def __init__(self, instance : BasicModule, device, iter_time=500):
-        self.model = instance.model
-        self.device = device
+
+class ModelActivateDropout(BasicUncertainty):
+    def __init__(self, instance: BasicModule, device, iter_time):
+        super(ModelActivateDropout, self).__init__(instance, device)
         self.iter_time = iter_time
-        self.name = instance.name
-        self.val_pred = instance.val_pred_y
-        self.test_pred = instance.test_pred_y
-
 
     def extract_metric(self, data_loader, orig_pred_y):
         res = 0
         self.model.train()
         for _ in range(self.iter_time):
             _, pred, _ = common_predict(data_loader, self.model, self.device)
-            res= res + pred.eq(orig_pred_y)
+            res = res + pred.eq(orig_pred_y)
         self.model.eval()
-        res = ten2numpy(res.float() / self.iter_time)
+        res = common_ten2numpy(res.float() / self.iter_time)
         return res
 
-    def run_experiment(self, val_loader, test_loader):
-        val_res = self.extract_metric(val_loader, self.val_pred)
-        test_res = self.extract_metric(test_loader, self.test_pred)
+    def _predict_result(self, data_loader, model):
+        pred_pos, pred_list, y_list = [], [], []
+        model.to(self.device)
+        for i, (x, y) in enumerate(data_loader):
+            torch.cuda.empty_cache()
+            x = x.to(self.device)
+            output = model(x)
+            pos, pred_y = torch.max(output, dim=1)
+            pred_list.append(pred_y.detach())
+            pred_pos.append(output.detach())
+            y_list.append(y.detach())
+        return torch.cat(pred_pos, dim=0).cpu(), torch.cat(pred_list, dim=0).cpu(), torch.cat(y_list, dim=0).cpu()
 
-        res = [
-            val_res,
-            test_res,
-        ]
-        torch.save(res, './Result/' + self.name + '/dropout.res')
-        print('get result for MCDrop')
+    @staticmethod
+    def label_chgrate(orig_pred, prediction):
+        return np.sum(orig_pred.reshape([-1, 1]) == prediction, axis=1)
+
+    def _uncertainty_calculate(self, data_loader):
+        self.model.eval()
+        _, orig_pred, _ = self._predict_result(data_loader, self.model)
+        mc_result = []
+        self.model.train()
+        for i in range(self.iter_time):
+            _, res, _ = self._predict_result(data_loader, self.model)
+            mc_result.append(common_ten2numpy(res).reshape([-1, 1]))
+        mc_result = np.concatenate(mc_result, axis=1)
+        score = self.label_chgrate(orig_pred, mc_result)
+        return score

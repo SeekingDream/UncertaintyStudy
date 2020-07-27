@@ -1,22 +1,25 @@
 from abc import ABCMeta, abstractmethod
-from torch.utils.data import DataLoader,Subset
-from BasicalClass.common_function import common_predict, ten2numpy
+from torch.utils.data import DataLoader, Subset
+from BasicalClass.common_function import common_predict, common_ten2numpy
 import torch
+import os
+
 
 class BasicModule:
     __metaclass__ = ABCMeta
 
-    def __init__(self,device, load_poor):
+    def __init__(self, device, load_poor):
         self.device = device
         self.load_poor = load_poor
         self.train_batch_size = 1000
         self.test_batch_size = 1000
-        self.name = 'Basic'
         self.model = self.get_model()
         self.class_num = 10
         self.train_loader = None
         self.val_loader = None
         self.test_loader = None
+        if not os.path.isdir('../Result/' + self.__class__.__name__):
+            os.mkdir('../Result/' + self.__class__.__name__)
 
     def get_model(self):
         if not self.load_poor:
@@ -62,8 +65,8 @@ class BasicModule:
         self.val_truth = self.val_pred_y.eq(self.val_y)
         self.test_truth = self.test_pred_y.eq(self.test_y)
         truth = [
-            ten2numpy(self.train_truth),
-            ten2numpy(self.val_truth),
-            ten2numpy(self.test_truth)
+            common_ten2numpy(self.train_truth),
+            common_ten2numpy(self.val_truth),
+            common_ten2numpy(self.test_truth)
         ]
-        torch.save(truth, './Result/' + self.name  + '/truth.res')
+        torch.save(truth, '../Result/' + self.__class__.__name__ + '/truth.res')

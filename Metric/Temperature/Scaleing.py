@@ -3,8 +3,10 @@ from torch import nn, optim
 from torch.nn import functional as F
 from BasicalClass import common_predict, common_get_maxpos
 from BasicalClass import BasicModule
+from Metric import BasicUncertainty
 
-class ModelWithTemperature(nn.Module):
+
+class ModelWithTemperature(BasicUncertainty):
     """
     A thin decorator, which wraps a model with temperature scaling
     model (nn.Module):
@@ -12,16 +14,13 @@ class ModelWithTemperature(nn.Module):
         NB: Output of the neural network should be the classification logits,
             NOT the softmax (or log softmax)!
     """
-    def __init__(self, module : BasicModule, device):
-        super(ModelWithTemperature, self).__init__()
-        self.model = module.model
-        self.name = module.name
-        self.device = device
+    def __init__(self, instance:BasicModule, device):
+        super(ModelWithTemperature, self).__init__(instance, device)
         self.temperature = nn.Parameter(torch.ones(1) * 1.5)
+        self.set_temperature(self.val_loader)
 
-
-    def forward(self, input):
-        logits = self.model(input)
+    def forward(self, x):
+        logits = self.model(x)
         return self.temperature_scale(logits)
 
     def temperature_scale(self, logits):
@@ -32,7 +31,6 @@ class ModelWithTemperature(nn.Module):
         temperature = self.temperature.unsqueeze(1).expand(logits.size(0), logits.size(1))
         return logits / temperature
 
-    # This function probably should live outside of this class, but whatever
     def set_temperature(self, valid_loader):
         """
         Tune the tempearature of the model (using the validation set).
@@ -76,16 +74,10 @@ class ModelWithTemperature(nn.Module):
         print('After temperature - NLL: %.3f, ECE: %.3f' % (after_temperature_nll, after_temperature_ece))
         return self
 
-    def run_experiment(self, val_loader, test_loader):
-        val_res, _, _ = common_predict(val_loader, self, self.device)
-        test_res, _, _ = common_predict(test_loader, self, self.device)
-
-        res = [
-            common_get_maxpos(val_res),
-            common_get_maxpos(test_res),
-        ]
-        torch.save(res, './Result/' + self.name + '/scale.res')
-        print('get result for Scaleing')
+    def _uncertainty_calculate(self, data_loader):
+        score, _, _ = common_predict(data_loader, self, self.device)
+        score = common_get_maxpos(score)
+        return score
 
 
 class _ECELoss(nn.Module):

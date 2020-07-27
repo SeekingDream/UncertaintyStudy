@@ -1,24 +1,20 @@
 import torch
 from BasicalClass import BasicModule
+from Metric import BasicUncertainty
 from torch.nn import functional as F
-from BasicalClass import common_predict, ten2numpy
+from BasicalClass import common_predict, common_ten2numpy
 from BasicalClass import common_get_auc
 import numpy as np
 from utils import  IS_DEBUG, DEBUG_NUM
 from sklearn.linear_model import LogisticRegression
 
 
-class Mahalanobis():
-    def __init__(self, instance : BasicModule, device):
-        self.instance = instance
-        self.model = instance.model
-        self.device = device
-        self.name = instance.name
-        self.class_num = instance.class_num
+class Mahalanobis(BasicUncertainty):
+    def __init__(self, instance: BasicModule, device):
+        super(Mahalanobis, self).__init__(instance, device)
         self.hidden_num = 1
         self.u_list, self.std_value = self.preprocess(instance.train_loader)
         self.lr = self.train_logic(instance.train_loader, instance.train_truth)
-
 
     def train_logic(self, data_loader, ground_truth):
         train_res = self.extract_metric(data_loader)
@@ -30,7 +26,7 @@ class Mahalanobis():
 
     def preprocess(self, data_loader):
         fx, y = self.get_penultimate(data_loader)
-        u_list, std_list = [],[]
+        u_list, std_list = [], []
         for target in range(self.class_num):
             fx_tar = fx[torch.where(y == target)]
             mean_val = torch.mean(fx_tar, dim = 0)
@@ -40,7 +36,6 @@ class Mahalanobis():
         std_value = sum(std_list) / len(y)
         std_value = torch.inverse(std_value)
         return u_list, std_value
-
 
     def get_penultimate(self, data_loader):
         res, y_list = [], []
@@ -54,9 +49,8 @@ class Mahalanobis():
             if IS_DEBUG and i >= DEBUG_NUM:
                 break
         res = torch.cat(res, dim=0)
-        y_list =  torch.cat(y_list, dim=0)
+        y_list = torch.cat(y_list, dim=0)
         return res, y_list
-
 
     def extract_metric(self, data_loader):
         fx, _ = self.get_penultimate(data_loader)
@@ -67,7 +61,7 @@ class Mahalanobis():
             tmp = tmp.diagonal().reshape([-1, 1])
             score.append(-tmp)
         score = torch.cat(score, dim = 1)
-        score = ten2numpy(torch.max(score, dim = 1)[0])
+        score = common_ten2numpy(torch.max(score, dim = 1)[0])
         return score
 
     def run_experiment(self, val_loader, test_loader):

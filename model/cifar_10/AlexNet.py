@@ -5,6 +5,7 @@ import torch.nn as nn
 class AlexNet(nn.Module):
     def __init__(self, num_classes=10):
         super(AlexNet, self).__init__()
+
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=2)
