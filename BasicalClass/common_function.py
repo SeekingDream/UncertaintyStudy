@@ -54,11 +54,11 @@ def common_predict(data_loader, model, device):
     return torch.cat(pred_pos, dim=0).cpu(), torch.cat(pred_list, dim = 0).cpu(), torch.cat(y_list, dim = 0).cpu()
 
 
-def common_get_auc(y_test, y_score, name):
+def common_get_auc(y_test, y_score, name=None):
     fpr, tpr, threshold = roc_curve(y_test, y_score)  ###计算真正率和假正率
     roc_auc = auc(fpr, tpr)  ###计算auc的值
     if name is not None:
-        print(name, 'auc is ',roc_auc)
+        print(name, 'auc is ', roc_auc)
     return roc_auc
 
 

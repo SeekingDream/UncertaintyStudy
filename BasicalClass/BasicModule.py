@@ -23,9 +23,10 @@ class BasicModule:
 
     def get_model(self):
         if not self.load_poor:
-            model = self.load_model().to(self.device)
+            model = self.load_model()
         else:
-            model = self.load_poor_model().to(self.device)
+            model = self.load_poor_model()
+        model.to(self.device)
         model.eval()
         print('model name is ', model.__class__.__name__)
         return model
@@ -38,10 +39,22 @@ class BasicModule:
     def load_poor_model(self):
         return None
 
-    def get_loader(self, train_db, val_db, test_db):
+    def get_hiddenstate(self, dataloader, device):
+        sub_num = self.model.sub_num
+        hidden_res, label_res = [[] for _ in sub_num], []
+        for x, y in dataloader:
+            x = x.to(device)
+            res = self.model.get_hidden(x)
+            for i, r in enumerate(res):
+                hidden_res[i].append(r)
+            label_res.append(y)
+        hidden_res = [torch.cat(tmp, dim=0) for tmp in hidden_res]
+        return hidden_res, sub_num, torch.cat(label_res)
+
+    def get_loader(self, train_db, val_db, test_db ):
         train_loader = DataLoader(
             train_db, batch_size=self.train_batch_size,
-            shuffle=True, collate_fn=None)
+            shuffle=False, collate_fn=None)
         val_loader = DataLoader(
             val_db, batch_size=self.test_batch_size,
             shuffle=False, collate_fn=None)

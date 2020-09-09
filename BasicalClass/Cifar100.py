@@ -3,7 +3,7 @@ import torchvision
 from torchvision import transforms
 import torch.nn as nn
 from BasicalClass.common_function import *
-from BasicalClass.Basic import BasicModule
+from BasicalClass.BasicModule import BasicModule
 import torch.optim as optim
 
 

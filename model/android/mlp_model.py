@@ -1,6 +1,7 @@
 import torch.nn as nn
 import numpy as np
 
+
 class Android_MLP(nn.Module):
     def __init__(self, feature_num, drop_p = 0.5):
         super(Android_MLP, self).__init__()
@@ -11,7 +12,6 @@ class Android_MLP(nn.Module):
         self.linear_3 = nn.Linear(100, 2)
         self.relu = nn.ReLU(inplace=True)
         self.dropout = nn.Dropout(drop_p)
-        self.name = 'MLP'
         self.sub_num = [1, 2]
 
     def forward(self, x):

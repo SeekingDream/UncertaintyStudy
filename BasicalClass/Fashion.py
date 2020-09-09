@@ -3,7 +3,7 @@ import torchvision
 from torchvision import transforms
 import torch.nn as nn
 from BasicalClass.common_function import *
-from BasicalClass.Basic import BasicModule
+from BasicalClass.BasicModule import BasicModule
 import torch.optim as optim
 
 
@@ -43,27 +43,26 @@ class Fashion_Module(BasicModule):
         test_db = torch.load('../data/fashion' + '_test.pt')
         return self.get_loader(train_db, val_db, test_db)
 
-
-    def get_hiddenstate(self, dataset):
-        data_loader = DataLoader(
-            dataset, batch_size=self.train_batch_size,
-            shuffle=False, collate_fn=None,
-        )
-        data_num = 0
-        sub_num = self.model.sub_num
-        sub_res_list = [[] for _ in sub_num]
-        for i, x in enumerate(data_loader):
-            data_num += len(x)
-            x = x.to(self.device)
-            self.model.to(self.device)
-            sub_y = self.model.get_hidden(x)
-            for j in range(len(sub_num)):
-                sub_res_list[j].append(sub_y[j])
-            if IS_DEBUG and i >= DEBUG_NUM:
-                break
-        sub_res_list = [torch.cat(i, dim=0) for i in sub_res_list]
-        return sub_res_list, sub_num
-
+    # def get_hiddenstate(self, dataset):
+    #     data_loader = DataLoader(
+    #         dataset, batch_size=self.train_batch_size,
+    #         shuffle=False, collate_fn=None,
+    #     )
+    #     data_num = 0
+    #     sub_num = self.model.sub_num
+    #     sub_res_list = [[] for _ in sub_num]
+    #     for i, x in enumerate(data_loader):
+    #         data_num += len(x)
+    #         x = x.to(self.device)
+    #         self.model.to(self.device)
+    #         sub_y = self.model.get_hidden(x)
+    #         for j in range(len(sub_num)):
+    #             sub_res_list[j].append(sub_y[j])
+    #         if IS_DEBUG and i >= DEBUG_NUM:
+    #             break
+    #     sub_res_list = [torch.cat(i, dim=0) for i in sub_res_list]
+    #     return sub_res_list, sub_num
+    #
 
 if __name__ == '__main__':
 

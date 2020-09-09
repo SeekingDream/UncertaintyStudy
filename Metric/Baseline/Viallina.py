@@ -1,11 +1,6 @@
-from typing import *
 from BasicalClass import BasicModule
 from BasicalClass import common_get_maxpos, common_predict
 from Metric import BasicUncertainty
-import torch.nn as nn
-import torch.optim as optim
-import argparse
-import torch
 
 
 class Viallina(BasicUncertainty):

@@ -16,7 +16,7 @@ class BasicUncertainty(nn.Module):
         self.device = device
         self.train_batch_size = self.instance.train_batch_size
         self.test_batch_size = self.instance.test_batch_size
-        self.model = self.instance.model
+        self.model = self.instance.model.to(self.device)
         self.class_num = self.instance.class_num
 
         self.train_y, self.val_y, self.test_y = \
@@ -56,12 +56,19 @@ class BasicUncertainty(nn.Module):
     def run(self):
         score = self.get_uncertainty()
         self.save_uncertaity_file(score)
+        print('finish score extract for class', self.__class__.__name__)
+        return score
 
     def get_uncertainty(self):
         train_score = self._uncertainty_calculate(self.train_loader)
         val_score = self._uncertainty_calculate(self.val_loader)
         test_score = self._uncertainty_calculate(self.test_loader)
-        return train_score, val_score, test_score
+        result = {
+            'train': train_score,
+            'val': val_score,
+            'test': test_score
+        }
+        return result
 
     def save_uncertaity_file(self, score_dict):
         data_name = self.instance.__class__.__name__

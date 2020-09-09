@@ -14,10 +14,14 @@ class ModelWithTemperature(BasicUncertainty):
         NB: Output of the neural network should be the classification logits,
             NOT the softmax (or log softmax)!
     """
-    def __init__(self, instance:BasicModule, device):
+    def __init__(self, instance: BasicModule, device, temperature=None):
         super(ModelWithTemperature, self).__init__(instance, device)
-        self.temperature = nn.Parameter(torch.ones(1) * 1.5)
-        self.set_temperature(self.val_loader)
+        if temperature is None:
+            self.temperature = nn.Parameter(torch.ones(1) * 1.5)
+            self.set_temperature(self.val_loader)
+        else:
+            self.temperature = temperature
+        torch.save(self.temperature, '../Result/' + instance.__class__.__name__ + '/temperature.tmp')
 
     def forward(self, x):
         logits = self.model(x)
@@ -45,9 +49,9 @@ class ModelWithTemperature(BasicUncertainty):
         logits_list = []
         labels_list = []
         with torch.no_grad():
-            for input, label in valid_loader:
-                input = input.to(self.device)
-                logits = self.model(input)
+            for x, label in valid_loader:
+                x = x.to(self.device)
+                logits = self.model(x)
                 logits_list.append(logits)
                 labels_list.append(label)
             logits = torch.cat(logits_list).to(self.device)

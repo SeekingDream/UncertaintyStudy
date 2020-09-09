@@ -5,7 +5,7 @@ import torch.optim as optim
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
-from model.cifar_10 import AlexNet, vgg19_bn
+from model.cifar_10.vgg19 import VGG19
 from train_model.utils_training import *
 
 
@@ -20,7 +20,7 @@ def main():
     train_loader = DataLoader(train_db, batch_size=args.batch, shuffle=args.s, num_workers=args.worker)
     test_loader = DataLoader(test_db, batch_size=2000, shuffle=args.s, num_workers=args.worker)
 
-    model = vgg19_bn().to(device)
+    model = VGG19().to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
     for epoch in range(1, args.epoch):
         train_model(model, train_loader, optimizer, epoch, device)

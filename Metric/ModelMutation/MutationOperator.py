@@ -179,6 +179,8 @@ class NeuronActivationInverse(BasicMutation):
     def get_mutate_model(self, act_type='relu'):
         try:
             model = copy.deepcopy(self.model)
+            model.train()
+            return model, False
             ActFun = nn.ReLU if act_type == 'relu' else nn.ELU
             num_actlayers = 0
             for module in model.modules():

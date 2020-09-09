@@ -19,6 +19,7 @@ def train_model(model, train_loader, optimizer, epoch, device):
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss.item()))
+    return None
 
 
 def test_model(model, test_loader, device):
@@ -51,14 +52,15 @@ def get_loader(data_dir):
     test_db = torch.load(data_dir + '_test.pt')
     return train_db, val_db, test_db
 
+
 def get_input():
     parser = argparse.ArgumentParser()
     parser.add_argument('-gpu', type=bool, default=True, help='use gpu or not')
-    parser.add_argument('-device', type=int, default=0, help='the gpu id')
+    parser.add_argument('-device', type=int, default=2, help='the gpu id')
     parser.add_argument('-worker', type=int, default=4, help='number of workers for dataloader')
-    parser.add_argument('-epoch', type=int, default=20, help='epoch for training')
+    parser.add_argument('-epoch', type=int, default=100, help='epoch for training')
     parser.add_argument('-batch', type=int, default=128, help='batch size for dataloader')
     parser.add_argument('-s', type=bool, default=True, help='whether shuffle the dataset')
-    parser.add_argument('-lr', type=float, default=0.001, help='initial learning rate')
+    parser.add_argument('-lr', type=float, default=0.0001, help='initial learning rate')
     args = parser.parse_args()
     return args

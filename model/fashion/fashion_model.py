@@ -3,6 +3,7 @@ import torch.nn as nn                   # 指定torch.nn别名nn
 import torch.nn.functional as F         # 引用神经网络常用函数包，不具有可学习的参数
 import numpy as np
 
+
 class Fashion_MLP(nn.Module):
     def __init__(self):
         super(Fashion_MLP, self).__init__()
@@ -11,7 +12,6 @@ class Fashion_MLP(nn.Module):
         self.fc3 = nn.Linear(200, 10)
         self.dropout = nn.Dropout()
         self.name = 'Fashion_MLP'
-
         self.sub_num = [1, 2]
 
     def forward(self, x):
@@ -106,11 +106,11 @@ class Fashion_CNN(nn.Module):
 
     def get_feature(self, x):
         x = self.conv1(x)
-        x = self.relu(x)
+        x = F.relu(x)
         x = self.dropout(x)
         x = F.max_pool2d(x, 2, 2)
         x = self.conv2(x)
-        x = self.relu(x)
+        x = F.relu(x)
         x = self.dropout(x)
         x = F.max_pool2d(x, 2, 2)
         x = x.view(-1, 4 * 4 * 50)

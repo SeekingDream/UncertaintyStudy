@@ -1,12 +1,10 @@
 import torch
-from BasicalClass import BasicModule
-from Metric import BasicUncertainty
-from torch.nn import functional as F
-from BasicalClass import common_predict, common_ten2numpy
-from BasicalClass import common_get_auc
-import numpy as np
-from utils import  IS_DEBUG, DEBUG_NUM
 from sklearn.linear_model import LogisticRegression
+
+from BasicalClass import BasicModule
+from BasicalClass import common_ten2numpy
+from Metric import BasicUncertainty
+from utils import IS_DEBUG, DEBUG_NUM
 
 
 class Mahalanobis(BasicUncertainty):
@@ -42,7 +40,6 @@ class Mahalanobis(BasicUncertainty):
         for i, (x, y) in enumerate(data_loader):
             x = x.to(self.device)
             self.model.to(self.device)
-            print(i)
             fx = self.model.get_feature(x)
             res.append(fx)
             y_list.append(y)
@@ -57,21 +54,15 @@ class Mahalanobis(BasicUncertainty):
         score = []
         for target in range(self.class_num):
             tmp = (fx - self.u_list[target]).mm(self.std_value)
-            tmp = tmp.mm( (fx - self.u_list[target]).transpose(dim0=0, dim1=1) )
+            tmp = tmp.mm((fx - self.u_list[target]).transpose(dim0=0, dim1=1) )
             tmp = tmp.diagonal().reshape([-1, 1])
             score.append(-tmp)
-        score = torch.cat(score, dim = 1)
-        score = common_ten2numpy(torch.max(score, dim = 1)[0])
+        score = torch.cat(score, dim=1)
+        score = common_ten2numpy(torch.max(score, dim=1)[0])
         return score
 
-    def run_experiment(self, val_loader, test_loader):
-        val_res = self.extract_metric(val_loader).reshape([-1, self.hidden_num])
-        val_res = self.lr.predict_proba(val_res)[:, 1]
-        test_res = self.extract_metric(test_loader).reshape([-1, self.hidden_num])
-        test_res = self.lr.predict_proba(test_res)[:, 1]
-        res = [
-            val_res,
-            test_res,
-        ]
-        torch.save(res, './Result/' + self.name + '/mahalanobis.res')
-        print('get result for Mahalanobis')
+    def _uncertainty_calculate(self, data_loader):
+        metric = self.extract_metric(data_loader).reshape([-1, self.hidden_num])
+        result = self.lr.predict_proba(metric)[:, 1]
+        return result
+

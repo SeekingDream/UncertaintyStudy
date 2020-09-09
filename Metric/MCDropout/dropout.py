@@ -36,7 +36,9 @@ class ModelActivateDropout(BasicUncertainty):
 
     @staticmethod
     def label_chgrate(orig_pred, prediction):
-        return np.sum(orig_pred.reshape([-1, 1]) == prediction, axis=1)
+        _, repeat_num = np.shape(prediction)
+        tmp = np.tile(orig_pred.reshape([-1, 1]), (1, repeat_num))
+        return np.sum(tmp == prediction, axis=1, dtype=np.float) / repeat_num
 
     def _uncertainty_calculate(self, data_loader):
         self.model.eval()
