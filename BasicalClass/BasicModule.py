@@ -11,13 +11,14 @@ class BasicModule:
     def __init__(self, device, load_poor):
         self.device = device
         self.load_poor = load_poor
-        self.train_batch_size = 64
-        self.test_batch_size = 64
+        self.train_batch_size = 8
+        self.test_batch_size = 8
         self.model = self.get_model()
         self.class_num = 10
         self.train_loader = None
         self.val_loader = None
-        self.test_loader = None
+        self.shift1_loader = None
+        self.shift2_loader = None
         if not os.path.isdir('../Result/' + self.__class__.__name__):
             os.mkdir('../Result/' + self.__class__.__name__)
 
@@ -70,16 +71,21 @@ class BasicModule:
         self.val_pred_pos, self.val_pred_y, self.val_y = \
             common_predict(self.val_loader, self.model, self.device)
 
-        self.test_pred_pos, self.test_pred_y, self.test_y = \
-            common_predict(self.test_loader, self.model, self.device)
+        self.shift1_pred_pos, self.shift1_pred_y, self.shift1_y = \
+            common_predict(self.shift1_loader, self.model, self.device)
+
+        self.shift2_pred_pos, self.shift2_pred_y, self.shift2_y = \
+            common_predict(self.shift2_loader, self.model, self.device)
 
     def save_truth(self):
         self.train_truth = self.train_pred_y.eq(self.train_y)
         self.val_truth = self.val_pred_y.eq(self.val_y)
-        self.test_truth = self.test_pred_y.eq(self.test_y)
+        self.shift1_truth = self.shift1_pred_y.eq(self.shift1_y)
+        self.shift2_truth = self.shift1_pred_y.eq(self.shift2_y)
         truth = [
             common_ten2numpy(self.train_truth),
             common_ten2numpy(self.val_truth),
-            common_ten2numpy(self.test_truth)
+            common_ten2numpy(self.shift1_truth),
+            common_ten2numpy(self.shift2_truth)
         ]
         torch.save(truth, '../Result/' + self.__class__.__name__ + '/truth.res')

@@ -19,23 +19,27 @@ class BasicUncertainty(nn.Module):
         self.model = self.instance.model.to(self.device)
         self.class_num = self.instance.class_num
 
-        self.train_y, self.val_y, self.test_y = \
-            self.instance.train_y, self.instance.val_y, self.instance.test_y
+        self.train_y, self.val_y, self.shift1_y, self.shift2_y = \
+            self.instance.train_y, self.instance.val_y, self.instance.shift1_y, self.instance.shift2_y
 
         self.train_pred_pos, self.train_pred_y =\
             self.instance.train_pred_pos, self.instance.train_pred_y
         self.val_pred_pos, self.val_pred_y = \
             self.instance.val_pred_pos, self.instance.val_pred_y
-        self.test_pred_pos, self.test_pred_y = \
-            self.instance.test_pred_pos, self.instance.test_pred_y
+        self.shift1_pred_pos, self.shift1_pred_y = \
+            self.instance.shift1_pred_pos, self.instance.shift1_pred_y
+        self.shift2_pred_pos, self.shift2_pred_y = \
+            self.instance.shift2_pred_pos, self.instance.shift2_pred_y
 
         self.train_loader = instance.train_loader
         self.val_loader = instance.val_loader
-        self.test_loader = instance.test_loader
+        self.shift1_loader = instance.shift1_loader
+        self.shift2_loader = instance.shift2_loader
 
         self.train_num = len(self.train_y)
         self.val_num = len(self.val_y)
-        self.test_num = len(self.test_y)
+        self.shift1_num = len(self.shift1_y)
+        self.shift2_num = len(self.shift2_y)
 
         self.train_oracle = np.int32(
             common_ten2numpy(self.train_pred_y).reshape([-1]) == common_ten2numpy(self.train_y).reshape([-1])
@@ -43,10 +47,12 @@ class BasicUncertainty(nn.Module):
         self.val_oracle = np.int32(
             common_ten2numpy(self.val_pred_y).reshape([-1]) == common_ten2numpy(self.val_y).reshape([-1])
         )
-        self.test_oracle = np.int32(
-            common_ten2numpy(self.test_pred_y).reshape([-1]) == common_ten2numpy(self.test_y).reshape([-1])
+        self.shift1_oracle = np.int32(
+            common_ten2numpy(self.shift1_pred_y).reshape([-1]) == common_ten2numpy(self.shift1_y).reshape([-1])
         )
-
+        self.shift2_oracle = np.int32(
+            common_ten2numpy(self.shift2_pred_y).reshape([-1]) == common_ten2numpy(self.shift2_y).reshape([-1])
+        )
         self.softmax = nn.Softmax(dim=1)
 
     @abstractmethod
@@ -62,11 +68,13 @@ class BasicUncertainty(nn.Module):
     def get_uncertainty(self):
         train_score = self._uncertainty_calculate(self.train_loader)
         val_score = self._uncertainty_calculate(self.val_loader)
-        test_score = self._uncertainty_calculate(self.test_loader)
+        shift1_score = self._uncertainty_calculate(self.shift1_loader)
+        shift2_score = self._uncertainty_calculate(self.shift2_loader)
         result = {
             'train': train_score,
             'val': val_score,
-            'test': test_score
+            'shift1': shift1_score,
+            'shift2': shift2_score,
         }
         return result
 

@@ -42,25 +42,57 @@ class ModelWithTemperature(BasicUncertainty):
         valid_loader (DataLoader): validation set loader
         """
         self.to(self.device)
-        nll_criterion = nn.CrossEntropyLoss().cuda()
-        ece_criterion = _ECELoss().cuda()
+        # nll_criterion = nn.CrossEntropyLoss().cuda()
+        # ece_criterion = _ECELoss().cuda()
+        nll_criterion = nn.CrossEntropyLoss()
+        ece_criterion = _ECELoss()
 
         # First: collect all the logits and labels for the validation set
         logits_list = []
         labels_list = []
         with torch.no_grad():
-            for x, label in valid_loader:
-                x = x.to(self.device)
-                logits = self.model(x)
+            # for x, label in valid_loader:
+            #     x = x.to(self.device)
+            #     logits = self.model(x)
+            #     logits_list.append(logits)
+            #     labels_list.append(label)
+           
+            for i, ((sts, paths, eds), y, length) in enumerate(valid_loader):
+                torch.cuda.empty_cache()
+                sts = sts.to(self.device)
+                paths = paths.to(self.device)
+                eds = eds.to(self.device)
+                y = torch.tensor(y, dtype=torch.long).to(self.device)
+                logits = self.model(sts, paths, eds, length, self.device)
+                # _, pred_y = torch.max(output, dim=1)
                 logits_list.append(logits)
-                labels_list.append(label)
-            logits = torch.cat(logits_list).to(self.device)
-            labels = torch.cat(labels_list).to(self.device)
+                labels_list.append(y)
+                # detach
+                sts = sts.detach().cpu()
+                paths = paths.detach().cpu()
+                eds = eds.detach().cpu()
+
+                if isinstance(logits, tuple):
+                    logits = (py.detach().cpu() for py in logits)
+                else:
+                    logits = logits.detach().cpu()
+
+                if isinstance(y, tuple):
+                    y = (y_e.detach().cpu() for y_e in y)
+                else:
+                    y = y.detach().cpu()
+
+            # logits = torch.cat(logits_list).to(self.device)
+            # labels = torch.cat(labels_list).to(self.device)
+            logits = torch.cat(logits_list)
+            labels = torch.cat(labels_list)
 
         # Calculate NLL and ECE before temperature scaling
         before_temperature_nll = nll_criterion(logits, labels).item()
         before_temperature_ece = ece_criterion(logits, labels).item()
         print('Before temperature - NLL: %.3f, ECE: %.3f' % (before_temperature_nll, before_temperature_ece))
+
+
 
         # Next: optimize the temperature w.r.t. NLL
         optimizer = optim.LBFGS([self.temperature], lr=0.01, max_iter=50)
