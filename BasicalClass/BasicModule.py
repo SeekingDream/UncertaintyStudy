@@ -11,8 +11,8 @@ class BasicModule:
     def __init__(self, device, load_poor):
         self.device = device
         self.load_poor = load_poor
-        self.train_batch_size = 1000
-        self.test_batch_size = 1000
+        self.train_batch_size = 64
+        self.test_batch_size = 64
         self.model = self.get_model()
         self.class_num = 10
         self.train_loader = None

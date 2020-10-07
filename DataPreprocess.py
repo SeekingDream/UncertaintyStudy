@@ -6,7 +6,7 @@ from torchtext import data
 import numpy as np
 import os
 
-
+# image datasets
 def preprocess_img(load_func, store_name):
     transform = transforms.Compose(
         [
@@ -38,7 +38,7 @@ def process_image():
     for i in range(3):
         preprocess_img(func_list[i], store_list[i])
 
-
+# nlp datasets
 def preprocess_text(dataset_name):
     dataset_path = './data/' + dataset_name
     if not os.path.isdir(dataset_path):
@@ -59,7 +59,6 @@ def process_nlp():
     dataset_list = [
         'AG_NEWS', 'DBpedia', 'SogouNews'
     ]
-
     for data_name in dataset_list:
         preprocess_text(data_name)
 

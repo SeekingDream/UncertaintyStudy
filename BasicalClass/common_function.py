@@ -5,9 +5,10 @@ import matplotlib.pyplot as plt
 import os
 from sklearn.metrics import roc_curve, auc
 import numpy as np
+from tqdm import tqdm
 
 
-DEVICE = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if DEVICE.type == 'cpu':
     os.chdir('F:/Python/UncertaintyStudy')  # This set the current work directory.
     IS_DEBUG = True
@@ -41,17 +42,54 @@ def common_predict(data_loader, model, device):
     pred_pos, pred_list, y_list = [], [], []
     model.to(device)
     model.eval()
-    for i, (x, y) in enumerate(data_loader):
+    for i, ((sts, paths, eds), y, length) in tqdm(enumerate(data_loader)):
         torch.cuda.empty_cache()
-        x = x.to(device)
-        output = model(x)
-        pos, pred_y = torch.max(output, dim=1)
-        pred_list.append(pred_y.detach())
-        pred_pos.append(output.detach())
-        y_list.append(y.detach())
+        sts = sts.to(device)
+        paths = paths.to(device)
+        eds = eds.to(device)
+        y = torch.tensor(y, dtype=torch.long).to(device)
+        output = model(sts, paths, eds, length, device)
+        _, pred_y = torch.max(output, dim=1)
+        # detach
+        sts = sts.detach().cpu()
+        paths = paths.detach().cpu()
+        eds = eds.detach().cpu()
+
+        if isinstance(pred_y, tuple):
+            pred_y = (py.detach().cpu() for py in pred_y)
+        else:
+            pred_y = pred_y.detach().cpu()
+
+        if isinstance(output, tuple):
+            output = (ot.detach().cpu() for ot in output)
+        else:
+            output = output.detach().cpu()
+
+        if isinstance(y, tuple):
+            y = (y_e.detach().cpu() for y_e in y)
+        else:
+            y = y.detach().cpu()
+
+        pred_list.append(pred_y)
+        pred_pos.append(output)
+        y_list.append(y)
+
         if IS_DEBUG and i >= DEBUG_NUM:
             break
+        
     return torch.cat(pred_pos, dim=0).cpu(), torch.cat(pred_list, dim = 0).cpu(), torch.cat(y_list, dim = 0).cpu()
+
+    # for i, (x, y) in enumerate(data_loader):
+    #     torch.cuda.empty_cache()
+    #     x = x.to(device)
+    #     output = model(x)
+    #     pos, pred_y = torch.max(output, dim=1)
+    #     pred_list.append(pred_y.detach())
+    #     pred_pos.append(output.detach())
+    #     y_list.append(y.detach())
+    #     if IS_DEBUG and i >= DEBUG_NUM:
+    #         break
+    # return torch.cat(pred_pos, dim=0).cpu(), torch.cat(pred_list, dim = 0).cpu(), torch.cat(y_list, dim = 0).cpu()
 
 
 def common_get_auc(y_test, y_score, name=None):
