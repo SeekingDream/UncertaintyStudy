@@ -15,16 +15,20 @@ class ModelWithTemperature(BasicUncertainty):
             NOT the softmax (or log softmax)!
     """
     def __init__(self, instance: BasicModule, device, temperature=None):
+        # here the instance could be code_summary or code_completion
         super(ModelWithTemperature, self).__init__(instance, device)
         if temperature is None:
             self.temperature = nn.Parameter(torch.ones(1) * 1.5)
             self.set_temperature(self.val_loader)
         else:
             self.temperature = temperature
-        torch.save(self.temperature, '../Result/' + instance.__class__.__name__ + '/temperature.tmp')
+        torch.save(self.temperature, self.SAVE_DIR + '/' + instance.__class__.__name__ + '/temperature.tmp')
 
-    def forward(self, x):
-        logits = self.model(x)
+    # def forward(self, x):
+        # logits = self.model(x)
+    def forward(self, sts, paths, eds, length, device):
+        # here since the model is code_summary model, the input has to be changed
+        logits = self.model(sts, paths, eds, length, device)
         return self.temperature_scale(logits)
 
     def temperature_scale(self, logits):
@@ -41,7 +45,7 @@ class ModelWithTemperature(BasicUncertainty):
         We're going to set it to optimize NLL.
         valid_loader (DataLoader): validation set loader
         """
-        self.to(self.device)
+        # self.to(self.device)
         # nll_criterion = nn.CrossEntropyLoss().cuda()
         # ece_criterion = _ECELoss().cuda()
         nll_criterion = nn.CrossEntropyLoss()
@@ -65,8 +69,7 @@ class ModelWithTemperature(BasicUncertainty):
                 y = torch.tensor(y, dtype=torch.long).to(self.device)
                 logits = self.model(sts, paths, eds, length, self.device)
                 # _, pred_y = torch.max(output, dim=1)
-                logits_list.append(logits)
-                labels_list.append(y)
+                
                 # detach
                 sts = sts.detach().cpu()
                 paths = paths.detach().cpu()
@@ -82,6 +85,9 @@ class ModelWithTemperature(BasicUncertainty):
                 else:
                     y = y.detach().cpu()
 
+                logits_list.append(logits)
+                labels_list.append(y)
+
             # logits = torch.cat(logits_list).to(self.device)
             # labels = torch.cat(labels_list).to(self.device)
             logits = torch.cat(logits_list)
@@ -91,8 +97,6 @@ class ModelWithTemperature(BasicUncertainty):
         before_temperature_nll = nll_criterion(logits, labels).item()
         before_temperature_ece = ece_criterion(logits, labels).item()
         print('Before temperature - NLL: %.3f, ECE: %.3f' % (before_temperature_nll, before_temperature_ece))
-
-
 
         # Next: optimize the temperature w.r.t. NLL
         optimizer = optim.LBFGS([self.temperature], lr=0.01, max_iter=50)
@@ -111,6 +115,22 @@ class ModelWithTemperature(BasicUncertainty):
         return self
 
     def _uncertainty_calculate(self, data_loader):
+        # self: ModelWithTemperature(
+        #     (model): Code2Vec(
+        #         (node_embedding): Embedding(125344, 100, padding_idx=1)
+        #         (path_embedding): Embedding(557961, 100)
+        #         (out): Linear(in_features=100, out_features=48557, bias=True)
+        #         (drop): Dropout(p=0.5, inplace=False)
+        #     )
+        #     (softmax): Softmax(dim=1)
+        # )
+
+        # self.model:  Code2Vec(
+        #     (node_embedding): Embedding(125344, 100, padding_idx=1)
+        #     (path_embedding): Embedding(557961, 100)
+        #     (out): Linear(in_features=100, out_features=48557, bias=True)
+        #     (drop): Dropout(p=0.5, inplace=False)
+        # )
         score, _, _ = common_predict(data_loader, self, self.device)
         score = common_get_maxpos(score)
         return score

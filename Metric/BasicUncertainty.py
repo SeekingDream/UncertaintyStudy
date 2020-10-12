@@ -9,6 +9,7 @@ import os
 
 class BasicUncertainty(nn.Module):
     __metaclass__ = ABCMeta
+    SAVE_DIR = 'Uncertainty_Results'
 
     def __init__(self, instance: BasicModule, device):
         super(BasicUncertainty, self).__init__()
@@ -81,8 +82,8 @@ class BasicUncertainty(nn.Module):
     def save_uncertaity_file(self, score_dict):
         data_name = self.instance.__class__.__name__
         uncertainty_type = self.__class__.__name__
-        save_name = '../Result/' + data_name + '/' + uncertainty_type + '.res'
-        if not os.path.isdir('../Result/' + data_name):
-            os.mkdir('../Result/' + data_name)
+        save_name = self.SAVE_DIR + '/' + data_name + '/' + uncertainty_type + '.res'
+        if not os.path.isdir(os.path.join(self.SAVE_DIR, data_name)):
+            os.mkdir(os.path.join(self.SAVE_DIR, data_name))
         torch.save(score_dict, save_name)
         print('get result for dataset %s, uncertainty type is %s' % (data_name, uncertainty_type))

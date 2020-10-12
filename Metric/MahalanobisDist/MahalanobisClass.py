@@ -5,6 +5,7 @@ from BasicalClass import BasicModule
 from BasicalClass import common_ten2numpy
 from Metric import BasicUncertainty
 from utils import IS_DEBUG, DEBUG_NUM
+from tqdm import tqdm
 
 
 class Mahalanobis(BasicUncertainty):
@@ -23,6 +24,7 @@ class Mahalanobis(BasicUncertainty):
         return lr
 
     def preprocess(self, data_loader):
+        print('preprocessing ...')
         fx, y = self.get_penultimate(data_loader)
         u_list, std_list = [], []
         for target in range(self.class_num):
@@ -36,15 +38,34 @@ class Mahalanobis(BasicUncertainty):
         return u_list, std_value
 
     def get_penultimate(self, data_loader):
+        print('get penultimate ...')
         res, y_list = [], []
-        for i, (x, y) in enumerate(data_loader):
-            x = x.to(self.device)
-            self.model.to(self.device)
-            fx = self.model.get_feature(x)
+        self.model.to(self.device)
+        # for i, (x, y) in enumerate(data_loader):
+        #     x = x.to(self.device)
+        #     self.model.to(self.device)
+        #     fx = self.model.get_feature(x)
+        #     res.append(fx)
+        #     y_list.append(y)
+        #     if IS_DEBUG and i >= DEBUG_NUM:
+        #         break
+        for i, ((sts, paths, eds), y, length) in tqdm(enumerate(data_loader)):
+            torch.cuda.empty_cache()
+            sts = sts.to(self.device)
+            paths = paths.to(self.device)
+            eds = eds.to(self.device)
+            y = torch.tensor(y, dtype=torch.long)
+            fx = self.model(sts, paths, eds, length, self.device)
+            # detach
+            sts = sts.detach().cpu()
+            paths = paths.detach().cpu()
+            eds = eds.detach().cpu()
+            fx = fx.detach().cpu()
             res.append(fx)
             y_list.append(y)
             if IS_DEBUG and i >= DEBUG_NUM:
                 break
+
         res = torch.cat(res, dim=0)
         y_list = torch.cat(y_list, dim=0)
         return res, y_list
@@ -52,7 +73,8 @@ class Mahalanobis(BasicUncertainty):
     def extract_metric(self, data_loader):
         fx, _ = self.get_penultimate(data_loader)
         score = []
-        for target in range(self.class_num):
+        print('extract metric ...')
+        for target in tqdm(range(self.class_num)):
             tmp = (fx - self.u_list[target]).mm(self.std_value)
             tmp = tmp.mm((fx - self.u_list[target]).transpose(dim0=0, dim1=1) )
             tmp = tmp.diagonal().reshape([-1, 1])

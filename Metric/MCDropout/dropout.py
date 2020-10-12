@@ -4,7 +4,7 @@ from torch.nn import functional as F
 from BasicalClass import common_predict, common_ten2numpy
 import numpy as np
 from Metric import BasicUncertainty
-
+from tqdm import tqdm
 
 class ModelActivateDropout(BasicUncertainty):
     def __init__(self, instance: BasicModule, device, iter_time):
@@ -22,17 +22,29 @@ class ModelActivateDropout(BasicUncertainty):
         return res
 
     def _predict_result(self, data_loader, model):
+        # print('predicting result ...')
         pred_pos, pred_list, y_list = [], [], []
         model.to(self.device)
-        for i, (x, y) in enumerate(data_loader):
+      
+        for i, ((sts, paths, eds), y, length) in enumerate(data_loader):
             torch.cuda.empty_cache()
-            x = x.to(self.device)
-            output = model(x)
-            pos, pred_y = torch.max(output, dim=1)
-            pred_list.append(pred_y.detach())
-            pred_pos.append(output.detach())
-            y_list.append(y.detach())
-        return torch.cat(pred_pos, dim=0).cpu(), torch.cat(pred_list, dim=0).cpu(), torch.cat(y_list, dim=0).cpu()
+            sts = sts.to(self.device)
+            paths = paths.to(self.device)
+            eds = eds.to(self.device)
+            y = torch.tensor(y, dtype=torch.long)
+            output = model(sts, paths, eds, length, self.device)
+            _, pred_y = torch.max(output, dim=1)
+            # detach
+            sts = sts.detach().cpu()
+            paths = paths.detach().cpu()
+            eds = eds.detach().cpu()
+            pred_y = pred_y.detach().cpu()
+            output = output.detach().cpu()
+
+            pred_list.append(pred_y)
+            pred_pos.append(output)
+            y_list.append(y)
+        return torch.cat(pred_pos, dim=0), torch.cat(pred_list, dim=0), torch.cat(y_list, dim=0)
 
     @staticmethod
     def label_chgrate(orig_pred, prediction):
@@ -44,8 +56,9 @@ class ModelActivateDropout(BasicUncertainty):
         self.model.eval()
         _, orig_pred, _ = self._predict_result(data_loader, self.model)
         mc_result = []
-        self.model.train()
-        for i in range(self.iter_time):
+        print('calculating uncertainty ...')
+        # self.model.train()
+        for i in tqdm(range(self.iter_time)):
             _, res, _ = self._predict_result(data_loader, self.model)
             mc_result.append(common_ten2numpy(res).reshape([-1, 1]))
         mc_result = np.concatenate(mc_result, axis=1)

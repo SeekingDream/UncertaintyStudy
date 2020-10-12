@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from torch.nn import functional as F
 import matplotlib.pyplot as plt
 import os
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve, auc, average_precision_score
 import numpy as np
 from tqdm import tqdm
 
@@ -38,60 +38,64 @@ def common_predict_y(dataset, model, device, batch_size = 32, ): # Todo : modeif
             torch.cat(y_list, dim = 0).view([-1]).to(device)
 
 
-def common_predict(data_loader, model, device):
+def common_predict(data_loader, model, device, train_sub=False):
     pred_pos, pred_list, y_list = [], [], []
-    model.to(device)
-    model.eval()
-    for i, ((sts, paths, eds), y, length) in tqdm(enumerate(data_loader)):
-        torch.cuda.empty_cache()
-        sts = sts.to(device)
-        paths = paths.to(device)
-        eds = eds.to(device)
-        y = torch.tensor(y, dtype=torch.long).to(device)
-        output = model(sts, paths, eds, length, device)
-        _, pred_y = torch.max(output, dim=1)
-        # detach
-        sts = sts.detach().cpu()
-        paths = paths.detach().cpu()
-        eds = eds.detach().cpu()
-
-        if isinstance(pred_y, tuple):
-            pred_y = (py.detach().cpu() for py in pred_y)
-        else:
+    
+    if train_sub: # train sub linear fc model
+        for i, (x, y) in tqdm(enumerate(data_loader)):
+            torch.cuda.empty_cache()
+            x = x.to(device)
+            output = model(x)
+            _, pred_y = torch.max(output, dim=1) # pos, pred_y
+            y = torch.tensor(y, dtype=torch.long)
+            # detach
+            x = x.detach().cpu()
             pred_y = pred_y.detach().cpu()
-
-        if isinstance(output, tuple):
-            output = (ot.detach().cpu() for ot in output)
-        else:
             output = output.detach().cpu()
 
-        if isinstance(y, tuple):
-            y = (y_e.detach().cpu() for y_e in y)
-        else:
-            y = y.detach().cpu()
+            pred_list.append(pred_y)
+            pred_pos.append(output)
+            y_list.append(y)
+            if IS_DEBUG and i >= DEBUG_NUM:
+                break
+        # print(f'pred_pos[0]: {pred_pos[0]}, pred_list[0]: {pred_list[0]}, y_list[0]: {y_list[0]}')
+    else:
+        model.to(device)
+        model.eval()
+        for i, ((sts, paths, eds), y, length) in tqdm(enumerate(data_loader)):
+            torch.cuda.empty_cache()
+            sts = sts.to(device)
+            paths = paths.to(device)
+            eds = eds.to(device)
+            y = torch.tensor(y, dtype=torch.long)
+            output = model(sts, paths, eds, length, device)
 
-        pred_list.append(pred_y)
-        pred_pos.append(output)
-        y_list.append(y)
+            _, pred_y = torch.max(output, dim=1)
+            # detach
+            sts = sts.detach().cpu()
+            paths = paths.detach().cpu()
+            eds = eds.detach().cpu()
 
-        if IS_DEBUG and i >= DEBUG_NUM:
-            break
-        
-    return torch.cat(pred_pos, dim=0).cpu(), torch.cat(pred_list, dim = 0).cpu(), torch.cat(y_list, dim = 0).cpu()
+            if isinstance(pred_y, tuple):
+                pred_y = (py.detach().cpu() for py in pred_y)
+            else:
+                pred_y = pred_y.detach().cpu()
 
-    # for i, (x, y) in enumerate(data_loader):
-    #     torch.cuda.empty_cache()
-    #     x = x.to(device)
-    #     output = model(x)
-    #     pos, pred_y = torch.max(output, dim=1)
-    #     pred_list.append(pred_y.detach())
-    #     pred_pos.append(output.detach())
-    #     y_list.append(y.detach())
-    #     if IS_DEBUG and i >= DEBUG_NUM:
-    #         break
-    # return torch.cat(pred_pos, dim=0).cpu(), torch.cat(pred_list, dim = 0).cpu(), torch.cat(y_list, dim = 0).cpu()
+            if isinstance(output, tuple):
+                output = (ot.detach().cpu() for ot in output)
+            else:
+                output = output.detach().cpu()
 
+            pred_list.append(pred_y)
+            pred_pos.append(output)
+            y_list.append(y)
 
+            if IS_DEBUG and i >= DEBUG_NUM:
+                break
+
+    return torch.cat(pred_pos, dim=0), torch.cat(pred_list, dim = 0), torch.cat(y_list, dim = 0)
+
+    
 def common_get_auc(y_test, y_score, name=None):
     fpr, tpr, threshold = roc_curve(y_test, y_score)  ###计算真正率和假正率
     roc_auc = auc(fpr, tpr)  ###计算auc的值
@@ -119,6 +123,12 @@ def common_plotROC(y_test, y_score, file_name= None):
         plt.show()
     print(file_name, 'auc is ', roc_auc)
     return roc_auc
+
+def common_get_aupr(y_test, y_score, name=None):
+    aupr = average_precision_score(y_test, y_score)
+    if name is not None:
+        print(name, 'aupr is ', aupr)
+    return aupr
 
 
 def common_get_accuracy(ground_truth, oracle_pred, threshhold = 0.1):

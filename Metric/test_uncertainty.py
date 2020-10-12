@@ -19,21 +19,22 @@ if __name__ == '__main__':
         CodeSummary_Module
     ]
     MetricList = [
-        Viallina,
-        ModelWithTemperature,
-        PVScore,
+        # Viallina,
+        # ModelWithTemperature,
+        # PVScore,
         Mahalanobis,
-        ModelActivateDropout,
-        Mutation,
+        # ModelActivateDropout,
+        # Mutation,
     ]
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    Module = ModuleList[args.module_id]
+    Module = ModuleList[args.module_id] # code_summary
 
     module_instance = Module(device=device)
     for i, metric in enumerate(MetricList):
-        if i <= 3:
+        print(f'metric name: {metric.__name__}')
+        if metric.__name__ not in ['ModelActivateDropout', 'Mutation']:
             v = metric(module_instance, device)
         else:
-            v = metric(module_instance, device, iter_time=300)
+            v = metric(module_instance, device, iter_time=50)
         v.run()
