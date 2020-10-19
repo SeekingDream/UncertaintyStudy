@@ -168,7 +168,7 @@ class PVScore(BasicUncertainty):
         svscore_list, sub_num = self.get_svscore(data_loader, pred_y)
         for weight in weight_list:
             pv_score = self.get_pvscore(svscore_list, sub_num, weight).detach().cpu()
-            result.append(common_ten2numpy(pv_score))
+            result.append(1-common_ten2numpy(pv_score)) # pick the 1-score as uncertainty score
         return result
 
 

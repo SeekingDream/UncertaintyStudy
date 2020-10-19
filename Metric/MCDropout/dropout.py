@@ -57,10 +57,10 @@ class ModelActivateDropout(BasicUncertainty):
         _, orig_pred, _ = self._predict_result(data_loader, self.model)
         mc_result = []
         print('calculating uncertainty ...')
-        # self.model.train()
+        self.model.train()
         for i in tqdm(range(self.iter_time)):
             _, res, _ = self._predict_result(data_loader, self.model)
             mc_result.append(common_ten2numpy(res).reshape([-1, 1]))
         mc_result = np.concatenate(mc_result, axis=1)
         score = self.label_chgrate(orig_pred, mc_result)
-        return score
+        return 1-score

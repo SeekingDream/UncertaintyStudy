@@ -10,9 +10,12 @@ from tqdm import tqdm
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if DEVICE.type == 'cpu':
-    os.chdir('F:/Python/UncertaintyStudy')  # This set the current work directory.
+    print('Using CPU ...')
+    # os.chdir('F:/Python/UncertaintyStudy')  # This set the current work directory.
+    os.chdir('.')  # This set the current work directory.
     IS_DEBUG = True
 else:
+    print('Using CUDA GPU ...')
     IS_DEBUG = False
 DEBUG_NUM = 10
 RAND_SEED = 333
@@ -42,7 +45,7 @@ def common_predict(data_loader, model, device, train_sub=False):
     pred_pos, pred_list, y_list = [], [], []
     
     if train_sub: # train sub linear fc model
-        for i, (x, y) in tqdm(enumerate(data_loader)):
+        for i, (x, y) in enumerate(data_loader):
             torch.cuda.empty_cache()
             x = x.to(device)
             output = model(x)
@@ -62,7 +65,7 @@ def common_predict(data_loader, model, device, train_sub=False):
     else:
         model.to(device)
         model.eval()
-        for i, ((sts, paths, eds), y, length) in tqdm(enumerate(data_loader)):
+        for i, ((sts, paths, eds), y, length) in enumerate(data_loader):
             torch.cuda.empty_cache()
             sts = sts.to(device)
             paths = paths.to(device)
@@ -170,6 +173,14 @@ def common_load_corroptions():
 def common_get_maxpos(pos : torch.Tensor):
     test_pred_pos, _ = torch.max(F.softmax(pos, dim=1), dim=1)
     return common_ten2numpy(test_pred_pos)
+
+def common_get_entropy(pos : torch.Tensor):
+    pred_prob = F.softmax(pos, dim=1)+1e-5 # (N, k)
+    # print('prediction softmax probability: ', pred_prob)
+    log_prob = pred_prob.log() # (N, k)
+    # print('prediction log softmax probability: ', log_prob)
+    entropy = (-pred_prob * log_prob).sum(dim=1) # (N, )
+    return common_ten2numpy(entropy)
 
 
 def common_ten2numpy(a:torch.Tensor):

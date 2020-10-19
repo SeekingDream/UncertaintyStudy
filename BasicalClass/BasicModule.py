@@ -20,7 +20,7 @@ class BasicModule:
         self.vec_path = 'java_dataset/embedding_vec/100_2/Doc2VecEmbedding0.vec'
         self.embed_dim = 100
         self.out_dir = self.RES_DIR
-        self.max_size = 50000 # use 50000 of the data
+        self.max_size = None # use 50000 of the data
         self.embed_type = 1
         self.device = device
         self.load_poor = load_poor
